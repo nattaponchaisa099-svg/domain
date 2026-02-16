@@ -2,39 +2,133 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DOMAIN EXPANSION</title>
+<meta charset="UTF-8">
+<title>LIMITLESS VOID</title>
+
 <style>
-body {
-  margin: 0;
-  overflow: hidden;
-  background: black;
+body{margin:0;overflow:hidden;background:black;}
+video{
+ position:absolute;width:100%;height:100%;
+ object-fit:cover;filter:brightness(0.5) blur(2px);
 }
-video {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-canvas {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-}
-#text {
-  position: absolute;
-  bottom: 20%;
-  width: 100%;
-  text-align: center;
-  font-size: 30px;
-  color: cyan;
-  font-weight: bold;
-  text-shadow: 0 0 20px cyan;
-  display: none;
+
+canvas{position:absolute;width:100%;height:100%;}
+
+#title{
+ position:absolute;bottom:15%;width:100%;
+ text-align:center;font-size:36px;font-weight:bold;
+ color:#d0aaff;
+ text-shadow:0 0 20px #c77dff,0 0 40px #7b2cbf;
+ display:none;
 }
 </style>
 </head>
 <body>
 
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas"></canvas>
+<div id="title">LIMITLESS VOID</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+
+<script>
+const video=document.getElementById("video");
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
+const title=document.getElementById("title");
+
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+
+let chargeStart=null;
+let active=false;
+let rotation=0;
+
+navigator.mediaDevices.getUserMedia({video:{facingMode:"user"}})
+.then(stream=>video.srcObject=stream);
+
+const hands=new Hands({
+ locateFile:file=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+});
+
+hands.setOptions({
+ maxNumHands:1,
+ modelComplexity:1,
+ minDetectionConfidence:0.7,
+ minTrackingConfidence:0.7
+});
+
+function drawStars(){
+ for(let i=0;i<50;i++){
+   ctx.beginPath();
+   ctx.arc(Math.random()*canvas.width,
+           Math.random()*canvas.height,
+           Math.random()*2,0,Math.PI*2);
+   ctx.fillStyle="rgba(200,150,255,0.8)";
+   ctx.fill();
+ }
+}
+
+hands.onResults(results=>{
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+
+ if(results.multiHandLandmarks.length>0){
+   if(!chargeStart) chargeStart=Date.now();
+   let charge=(Date.now()-chargeStart)/2000;
+
+   if(charge>1){
+     active=true;
+     title.style.display="block";
+   }
+ }else{
+   chargeStart=null;
+   active=false;
+   title.style.display="none";
+ }
+
+ if(active){
+   rotation+=0.02;
+
+   // พื้นหลังจักรวาล
+   ctx.fillStyle="rgba(30,0,60,0.3)";
+   ctx.fillRect(0,0,canvas.width,canvas.height);
+
+   drawStars();
+
+   // วงพลัง
+   ctx.save();
+   ctx.translate(canvas.width/2,canvas.height/2);
+   ctx.rotate(rotation);
+
+   ctx.beginPath();
+   ctx.arc(0,0,180,0,Math.PI*2);
+   ctx.strokeStyle="#c77dff";
+   ctx.lineWidth=6;
+   ctx.shadowBlur=30;
+   ctx.shadowColor="#c77dff";
+   ctx.stroke();
+
+   ctx.beginPath();
+   ctx.arc(0,0,130,0,Math.PI*2);
+   ctx.strokeStyle="#9d4edd";
+   ctx.lineWidth=3;
+   ctx.stroke();
+
+   ctx.restore();
+ }
+});
+
+const camera=new Camera(video,{
+ onFrame:async()=>{await hands.send({image:video});},
+ width:640,
+ height:480
+});
+camera.start();
+</script>
+
+</body>
+</html>
 <video id="video" autoplay playsinline></video>
 <canvas id="canvas"></canvas>
 <div id="text">DOMAIN EXPANSION</div>
