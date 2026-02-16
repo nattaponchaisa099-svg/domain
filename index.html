@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>DOMAIN EXPANSION</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+
+<style>
+body{
+  margin:0;
+  overflow:hidden;
+  background:black;
+}
+
+canvas{
+  position:absolute;
+}
+
+#domainText{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  font-size:70px;
+  color:#ff00ff;
+  text-shadow:0 0 40px #ff00ff, 0 0 80px #aa00ff;
+  display:none;
+  animation:shake 0.1s infinite;
+}
+
+@keyframes shake{
+  0%{transform:translate(-50%,-50%) translateX(0);}
+  50%{transform:translate(-50%,-50%) translateX(5px);}
+  100%{transform:translate(-50%,-50%) translateX(-5px);}
+}
+</style>
+</head>
+
+<body>
+
+<video class="input_video" style="display:none"></video>
+<canvas class="output_canvas"></canvas>
+<div id="domainText">DOMAIN EXPANSION</div>
+
+<script>
+const videoElement = document.querySelector('.input_video');
+const canvasElement = document.querySelector('.output_canvas');
+const canvasCtx = canvasElement.getContext('2d');
+const text = document.getElementById("domainText");
+
+canvasElement.width = window.innerWidth;
+canvasElement.height = window.innerHeight;
+
+let rotation = 0;
+
+const hands = new Hands({
+  locateFile: (file) => {
+    return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+  }
+});
+
+hands.setOptions({
+  maxNumHands: 1,
+  minDetectionConfidence: 0.7,
+  minTrackingConfidence: 0.7
+});
+
+hands.onResults(results => {
+
+  canvasCtx.clearRect(0,0,canvasElement.width,canvasElement.height);
+  canvasCtx.drawImage(results.image,0,0,canvasElement.width,canvasElement.height);
+
+  if(results.multiHandLandmarks.length > 0){
+
+    const landmarks = results.multiHandLandmarks[0];
+
+    let openFingers = 0;
+    const tips = [8,12,16,20];
+    const pips = [6,10,14,18];
+
+    for(let i=0;i<tips.length;i++){
+      if(landmarks[tips[i]].y < landmarks[pips[i]].y){
+        openFingers++;
+      }
+    }
+
+    if(openFingers >= 4){
+
+      text.style.display = "block";
+
+      // ทำฉากมืดลง
+      canvasCtx.fillStyle = "rgba(0,0,0,0.5)";
+      canvasCtx.fillRect(0,0,canvasElement.width,canvasElement.height);
+
+      // วาดวงเวทย์หมุน
+      const x = canvasElement.width/2;
+      const y = canvasElement.height/2;
+      const radius = 200;
+
+      canvasCtx.save();
+      canvasCtx.translate(x,y);
+      canvasCtx.rotate(rotation);
+      canvasCtx.beginPath();
+      canvasCtx.arc(0,0,radius,0,Math.PI*2);
+      canvasCtx.strokeStyle = "#ff00ff";
+      canvasCtx.lineWidth = 5;
+      canvasCtx.shadowColor = "#ff00ff";
+      canvasCtx.shadowBlur = 30;
+      canvasCtx.stroke();
+      canvasCtx.restore();
+
+      rotation += 0.05;
+
+      // ออร่าเรืองแสง
+      canvasCtx.beginPath();
+      canvasCtx.arc(x,y,250,0,Math.PI*2);
+      canvasCtx.fillStyle = "rgba(170,0,255,0.2)";
+      canvasCtx.fill();
+
+    } else {
+      text.style.display = "none";
+    }
+  } else {
+    text.style.display = "none";
+  }
+});
+
+const camera = new Camera(videoElement, {
+  onFrame: async () => {
+    await hands.send({image: videoElement});
+  },
+  width:1280,
+  height:720
+});
+camera.start();
+</script>
+
+</body>
+</html>
