@@ -1,40 +1,103 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DOMAIN EXPANSION</title>
+<style>
+body {
+  margin: 0;
+  overflow: hidden;
+  background: black;
+}
+video {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+canvas {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+#text {
+  position: absolute;
+  bottom: 20%;
+  width: 100%;
+  text-align: center;
+  font-size: 30px;
+  color: cyan;
+  font-weight: bold;
+  text-shadow: 0 0 20px cyan;
+  display: none;
+}
+</style>
+</head>
+<body>
+
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas"></canvas>
+<div id="text">DOMAIN EXPANSION</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 
-<style>
-body{
-  margin:0;
-  overflow:hidden;
-  background:black;
-}
+<script>
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const text = document.getElementById('text');
 
-canvas{
-  position:absolute;
-}
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-#domainText{
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  font-size:70px;
-  color:#ff00ff;
-  text-shadow:0 0 40px #ff00ff, 0 0 80px #aa00ff;
-  display:none;
-  animation:shake 0.1s infinite;
-}
+navigator.mediaDevices.getUserMedia({ video: true })
+.then(stream => {
+  video.srcObject = stream;
+})
+.catch(err => {
+  alert("Camera error");
+});
 
-@keyframes shake{
-  0%{transform:translate(-50%,-50%) translateX(0);}
-  50%{transform:translate(-50%,-50%) translateX(5px);}
-  100%{transform:translate(-50%,-50%) translateX(-5px);}
-}
+const hands = new Hands({
+  locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+});
+
+hands.setOptions({
+  maxNumHands: 1,
+  modelComplexity: 1,
+  minDetectionConfidence: 0.7,
+  minTrackingConfidence: 0.7
+});
+
+hands.onResults(results => {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (results.multiHandLandmarks.length > 0) {
+    text.style.display = "block";
+
+    ctx.beginPath();
+    ctx.arc(canvas.width/2, canvas.height/2, 150, 0, 2*Math.PI);
+    ctx.strokeStyle = "cyan";
+    ctx.lineWidth = 5;
+    ctx.stroke();
+  } else {
+    text.style.display = "none";
+  }
+});
+
+const camera = new Camera(video, {
+  onFrame: async () => {
+    await hands.send({image: video});
+  },
+  width: 640,
+  height: 480
+});
+camera.start();
+</script>
+
+</body>
+</html>}
 </style>
 </head>
 
